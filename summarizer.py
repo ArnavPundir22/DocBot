@@ -1,31 +1,44 @@
+# summarizer.py
+import os
+from key_manager import GeminiKeyManager
 import google.generativeai as genai
-from config import GEMINI_API_KEY
-from PIL import Image
-from utils import chunk_text
 
-genai.configure(api_key=GEMINI_API_KEY)
-
+key_manager = GeminiKeyManager()
 text_model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
-vision_model = genai.GenerativeModel("models/gemini-1.5-pro-latest")  # ✅ Fixed
+vision_model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
 
 def summarize_text(text: str) -> str:
     try:
-        chunks = chunk_text(text)
-        summaries = []
-        for chunk in chunks:
-            response = text_model.generate_content(f"Summarize this chunk clearly:\n{chunk}")
-            summaries.append(response.text)
-        return "\n".join(summaries)
+        response = text_model.generate_content(f"Summarize this documentation clearly:\n{text}")
+        return response.text
     except Exception as e:
+        if "429" in str(e):
+            try:
+                key_manager.rotate_key()
+                return summarize_text(text)  # Retry
+            except RuntimeError as ex:
+                return f"[Quota Error]: {str(ex)}"
         return f"[Error]: {str(e)}"
 
 def summarize_images(image_paths: list) -> str:
-    try:
-        captions = []
-        for path in image_paths:
-            image = Image.open(path)
-            response = vision_model.generate_content(["Summarize the content of this image:", image])
-            captions.append(response.text)
-        return "\n\n".join(captions)
-    except Exception as e:
-        return f"[Vision Error]: {str(e)}"
+    if not image_paths:
+        return "No images found in PDF."
+
+    summaries = []
+    for path in image_paths:
+        try:
+            with open(path, "rb") as img_file:
+                response = vision_model.generate_content(
+                    [f"Summarize the content of this image briefly:", img_file],
+                    stream=False
+                )
+                summaries.append(f"{os.path.basename(path)}: {response.text}")
+        except Exception as e:
+            if "429" in str(e):
+                try:
+                    key_manager.rotate_key()
+                    return summarize_images(image_paths)  # Retry
+                except RuntimeError as ex:
+                    return f"[Quota Error]: {str(ex)}"
+            summaries.append(f"{os.path.basename(path)}: [Vision Error]: {str(e)}")
+    return "\n".join(summaries)

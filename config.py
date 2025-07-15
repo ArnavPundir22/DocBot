@@ -1,8 +1,11 @@
 # config.py
-GEMINI_API_KEY = "AIzaSyB4YUmzGmsIinmLcgLK4bGL0GEY2gve0EM"
-# import google.generativeai as genai
-#
-# genai.configure(api_key="AIzaSyB4YUmzGmsIinmLcgLK4bGL0GEY2gve0EM")
-#
-# for model in genai.list_models():
-#     print(model.name, model.supported_generation_methods)
+GEMINI_API_KEY = ""
+# config.py
+
+GEMINI_API_KEYS = [
+    "AIzaSyB4YUmzGmsIinmLcgLK4bGL0GEY2gve0EM",
+    "AIzaSyAwzq7tJx6ChuwqIg6vJFYulChw0OTOSP8",
+    "AIzaSyCFGQo8wLvWN_a3xJLtgkFM7w6LOGyVe94"
+]
+
+CURRENT_KEY_INDEX = 0
