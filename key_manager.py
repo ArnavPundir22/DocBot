@@ -21,3 +21,15 @@ class GeminiKeyManager:
             raise RuntimeError("🚫 All Gemini API keys exhausted. Please add more keys or try later.")
         self._set_key(self.keys[self.index])
         print(f"🔁 Switched to Gemini API Key #{self.index + 1}")
+
+def is_quota_error(response: str) -> bool:
+        if not response:
+            return False
+        return any(phrase in response.lower() for phrase in [
+            "you exceeded your current quota",
+            "quota limit",
+            "429",
+            "rate limit",
+            "out of quota",
+            "quota exceeded"
+        ])
