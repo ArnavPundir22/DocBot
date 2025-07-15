@@ -1,5 +1,5 @@
 
-# Gemini DocBot
+# DocBot
 
 **Gemini DocBot** is a desktop-based application that allows you to summarize online documentation via URL and ask questions about the content. Built using Python and PyQt5, it integrates Google's Gemini API to provide intelligent summarization and Q&A functionality.
 
