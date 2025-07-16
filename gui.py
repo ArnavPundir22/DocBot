@@ -131,7 +131,7 @@ class DocBotApp(QWidget):
         summary = summarize_text(self.scraped_text)
         self.summary_output.setText(summary)
 
-        self.spinner.setVisible(False)
+        self.spinner.setVisible(True)
 
         if "Quota Error" in summary:
             QMessageBox.warning(self, "Quota Limit Reached", summary)
