@@ -1,5 +1,4 @@
 # qa_engine.py
-
 import google.generativeai as genai
 from key_manager import GeminiKeyManager
 
@@ -15,7 +14,7 @@ def answer_question(context: str, question: str) -> str:
         if "429" in str(e):
             try:
                 key_manager.rotate_key()
-                return answer_question(context, question)  # Retry
+                return answer_question(context, question)
             except RuntimeError as ex:
                 return f"[Quota Error]: {str(ex)}"
         return f"[Error]: {str(e)}"

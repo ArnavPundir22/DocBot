@@ -1,8 +1,10 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 import time
 
 def scrape_text_from_url(url):
+    driver = None
     try:
         options = Options()
         options.add_argument("--headless")
@@ -11,12 +13,14 @@ def scrape_text_from_url(url):
 
         driver = webdriver.Chrome(options=options)
         driver.get(url)
-        time.sleep(3)  # Let JavaScript load content
 
-        # You can adjust what part of the page you want
-        text = driver.find_element("tag name", "body").text
-        driver.quit()
-
+        # Better approach than sleep: wait for body element
+        time.sleep(3)
+        text = driver.find_element(By.TAG_NAME, "body").text
         return text
+
     except Exception as e:
         return f"[Scraper Error] {str(e)}"
+    finally:
+        if driver:
+            driver.quit()

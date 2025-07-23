@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
     QTextEdit, QFileDialog, QHBoxLayout, QApplication, QMessageBox, QProgressBar
@@ -8,11 +9,11 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent
 
 from fpdf import FPDF
+
 from scraper import scrape_text_from_url
 from summarizer import summarize_text, summarize_images
 from qa_engine import answer_question
 from pdf_handler import extract_text_from_pdf, extract_images_from_pdf
-
 
 class DocBotApp(QWidget):
     def __init__(self):
@@ -126,15 +127,14 @@ class DocBotApp(QWidget):
 
         self.spinner.setVisible(True)
         QApplication.processEvents()
-
-        self.scraped_text = scrape_text_from_url(url)
-        summary = summarize_text(self.scraped_text)
-        self.summary_output.setText(summary)
-
-        self.spinner.setVisible(True)
-
-        if "Quota Error" in summary:
-            QMessageBox.warning(self, "Quota Limit Reached", summary)
+        try:
+            self.scraped_text = scrape_text_from_url(url)
+            summary = summarize_text(self.scraped_text).strip() or "❗ No summary generated."
+            self.summary_output.setText(summary)
+        except Exception as e:
+            self.summary_output.setText(f"Error: {e}")
+        finally:
+            self.spinner.setVisible(False)
 
     def upload_pdf(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select PDF", "", "PDF Files (*.pdf)")
@@ -144,13 +144,22 @@ class DocBotApp(QWidget):
     def summarize_pdf(self, path):
         self.spinner.setVisible(True)
         QApplication.processEvents()
-
         try:
+            from cache_manager import get_cached_summary, cache_summary
+            cached = get_cached_summary(path)
+            if cached:
+                self.summary_output.setText(cached)
+                return
+
             self.scraped_text = extract_text_from_pdf(path)
             self.pdf_images = extract_images_from_pdf(path)
             text_summary = summarize_text(self.scraped_text)
             image_summary = summarize_images(self.pdf_images)
-            self.summary_output.setText(f"📄 Text Summary:\n{text_summary}\n\n🖼️ Image Summary:\n{image_summary}")
+            full = f"📄 Text Summary:\n{text_summary}\n\n🖼️ Image Summary:\n{image_summary}"
+            self.summary_output.setText(full)
+            cache_summary(path, full)
+        except Exception as e:
+            self.summary_output.setText(f"Error: {e}")
         finally:
             self.cleanup_images()
             self.spinner.setVisible(False)
@@ -164,11 +173,13 @@ class DocBotApp(QWidget):
             QMessageBox.warning(self, "No Question", "Please enter a question.")
             return
 
-        answer = answer_question(self.scraped_text, question)
-        self.answer_output.setText(answer)
-
-        if "Quota Error" in answer:
-            QMessageBox.warning(self, "Quota Limit Reached", answer)
+        try:
+            answer = answer_question(self.scraped_text, question)
+            self.answer_output.setText(answer.strip() or "❗ No answer generated.")
+            if "Quota Error" in answer:
+                QMessageBox.warning(self, "Quota Limit Reached", answer)
+        except Exception as e:
+            self.answer_output.setText(f"Error: {e}")
 
     def export_summary(self):
         self._export_text("Summary", self.summary_output.toPlainText())
@@ -191,14 +202,14 @@ class DocBotApp(QWidget):
                 pdf.add_page()
                 pdf.set_font("Arial", size=12)
                 for line in content.splitlines():
-                    pdf.cell(200, 10, txt=line, ln=True)
+                    pdf.multi_cell(0, 10, txt=line)
                 pdf.output(path)
             else:
                 with open(path, 'w', encoding='utf-8') as f:
                     f.write(content)
             QMessageBox.information(self, "Exported", f"{label} saved successfully.")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to export {label}: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to export {label}: {e}")
 
     def cleanup_images(self):
         if os.path.exists("pdf_images"):
@@ -241,10 +252,11 @@ class DocBotApp(QWidget):
             if url.toLocalFile().endswith(".pdf"):
                 self.summarize_pdf(url.toLocalFile())
 
-
 if __name__ == "__main__":
-    import sys
-    app = QApplication(sys.argv)
-    window = DocBotApp()
-    window.show()
-    sys.exit(app.exec_())
+    try:
+        app = QApplication(sys.argv)
+        window = DocBotApp()
+        window.show()
+        sys.exit(app.exec_())
+    except Exception as e:
+        print(f"❗ Application Error: {e}")
