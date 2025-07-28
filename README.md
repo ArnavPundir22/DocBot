@@ -134,4 +134,4 @@ Portfolio: *arnavpundir22.github.io*
 
 ---
 
-**Built with ❤️ using Google Gemini + Python**
+**Built with using Google Gemini + Python**

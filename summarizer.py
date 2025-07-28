@@ -10,7 +10,7 @@ vision_model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
 
 def summarize_text(text: str) -> str:
     try:
-        response = text_model.generate_content(f"Summarize this documentation clearly:\n{text}")
+        response = text_model.generate_content(f"Summarize this documentation clearly with brief and humanized manner:\n{text}")
         return response.text
     except Exception as e:
         if "429" in str(e):
