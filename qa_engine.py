@@ -7,7 +7,7 @@ qa_model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
 
 def answer_question(context: str, question: str) -> str:
     try:
-        prompt = f"""Based on the following documentation:\n\n{context}\n\nAnswer the question:\n{question}"""
+        prompt = f"""Based on the following documentation:\n\n{context}\n\nAnswer the question:\n{question}, if the ques is not related to documentation: \n\n{context}\n\n answer it in short and humanized manner"""
         response = qa_model.generate_content(prompt)
         return response.text
     except Exception as e:
@@ -18,3 +18,4 @@ def answer_question(context: str, question: str) -> str:
             except RuntimeError as ex:
                 return f"[Quota Error]: {str(ex)}"
         return f"[Error]: {str(e)}"
+[]
